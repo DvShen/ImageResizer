@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ImageResizer
@@ -109,19 +110,24 @@ namespace ImageResizer
         /// <param name="sourcePath">圖片來源目錄路徑</param>
         /// <param name="destPath">產生圖片目的目錄路徑</param>
         /// <param name="scale">縮放比例</param>
-        public Task ResizeImagesAsync(string sourcePath, string destPath, double scale)
+        public async Task ResizeImagesAsync(string sourcePath, string destPath, double scale, CancellationToken token)
         {
             var tasks = new List<Task>();
             var allFiles = FindImages(sourcePath);
             foreach (var filePath in allFiles)
             {
-                tasks.Add(Task.Run(() =>
+                if (token.IsCancellationRequested == true)
+                {
+                    this.Clean(destPath);
+                    break;
+                }
+                await Task.Run(() =>
                             {
                                 ResizeImage(destPath, filePath, scale);
                             })
-                         );
+                         ;
             }
-            return Task.WhenAll(tasks);
+            //return Task.WhenAll(tasks);
         }
 
     }
